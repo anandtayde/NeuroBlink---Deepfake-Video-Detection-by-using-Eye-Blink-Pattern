@@ -99,4 +99,4 @@ uvicorn main:app --reload
 
 
 Frontend run
-npm run dev
+npm run dev   

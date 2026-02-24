@@ -1,0 +1,125 @@
+NEUROBLINK: PROJECT EXECUTION FLOW (A to Z)
+===========================================
+
+This document describes every single internal process that occurs when a user interacts with the NeuroBlink system.
+
+---
+PHASE 1: FRONTEND INTERACTION (The Gateway)
+---
+
+[Step A] Landing Page Navigation:
+The user enters the web interface. The React app immediately checks the backend health by calling http://localhost:8000/health. If the "Engine Active" light is green, the system is ready.
+
+[Step B] Video Selection:
+The user clicks the "Drop forensic evidence here" box and selects a video file (MP4, AVI, or MOV).
+
+[Step C] Ingestion & Upload:
+The browser handles the file pointer. A visual progress bar simulates "Buffer Saturation" while the file is being prepared for transfer.
+
+[Step D] Multi-part Form Submission:
+The frontend uses Axios to send a POST request to http://localhost:8000/predict. The video is sent as a 'multipart/form-data' stream.
+
+---
+PHASE 2: BACKEND INGESTION (FastAPI)
+---
+
+[Step E] Temporary Storage:
+The FastAPI server receives the UploadFile object. It creates a unique temporary directory using 'tempfile.mkdtemp()' and writes the raw binary evidence to a physical disk location (e.g., video.mp4).
+
+[Step F] Neural Component Activation:
+The 'lifespan' event of the API has already pre-loaded the 'FeatureExtractor' and 'DeepfakeClassifier' into RAM. The 'predict' endpoint now triggers these modules.
+
+---
+PHASE 3: COMPUTER VISION & SIGNAL PROCESSING (The Forensic Scan)
+---
+
+[Step G] Frame-by-Frame Extraction:
+OpenCV (cv2) opens the video file. It calculates the FPS (Frames Per Second) and total frame count.
+
+[Step H] 468-Landmark Face Mapping:
+For every frame (or sampled frames), MediaPipe Face Mesh is invoked.
+1. It detects the face bounding box.
+2. It generates 468 3D coordinates (X, Y, Z) for facial features.
+3. If no face is found, that frame is flagged as "Signal Lost".
+
+[Step I] Ocular Region Isolation:
+The system specifically targets the coordinates around the eyes.
+Left Eye Indices: [33, 160, 158, 133, 153, 144]
+Right Eye Indices: [362, 385, 387, 263, 373, 380]
+
+[Step J] EAR Calculation (Eye Aspect Ratio):
+For every frame, the system computes the EAR formula:
+EAR = (Vertical_Dist_1 + Vertical_Dist_2) / (2 * Horizontal_Dist)
+This converts a 3D visual image into a 1D numerical signal (The "Pulse").
+
+[Step K] Temporal Sequence Assembly:
+The EAR values are stored in a list along with their timestamps. This creates a "Temporal Ocular Signature" over time.
+
+---
+PHASE 4: FEATURE ENGINEERING
+---
+
+[Step L] Blink Event Detection:
+The 'EyeAnalyzer' scans the EAR sequence.
+1. If EAR drops below 0.25, a "Blink Start" is recorded.
+2. When it rises back above 0.25, a "Blink End" is recorded.
+3. If the duration is too short (noise) or too long (eyes closed), it is filtered.
+
+[Step M] Statistical Feature Extraction:
+The system calculates a "Feature Vector" for the ML model:
+- Average Blink Rate (Blinks per second)
+- Average Blink Duration (How long eyes stay closed)
+- Blink Completeness (How narrow the eyes get)
+- EAR Stability (Variance in the open-eye state)
+
+---
+PHASE 5: MACHINE LEARNING CLASSIFICATION
+---
+
+[Step N] Model Prediction:
+The Feature Vector is passed into the 'DeepfakeClassifier'. 
+1. The values are 'Scaled' using a pre-trained StandardScaler (to match training data weights).
+2. The Random Forest (or SVM) model analyzes the vector.
+3. It outputs a probability (e.g., 0.92 Probability of "FAKE").
+
+[Step O] Verdict Generation:
+If the result is 1 (FAKE), the system marks it as "Synthetic Identity".
+If the result is 0 (REAL), it marks it as "Biometric Signature Verified".
+
+---
+PHASE 6: FORENSIC EVIDENCE GENERATION
+---
+
+[Step P] Evidence Frame Selection:
+The system looks back through the video to find the frame with the lowest EAR (the deepest part of a blink). 
+
+[Step Q] Visual Annotation:
+The system draws 468 landmarks and EAR indicators onto that specific frame. It encodes it into a Base64 string.
+
+---
+PHASE 7: DATA TRANSMISSION & VISUALIZATION
+---
+
+[Step R] JSON Response:
+The backend sends a structured JSON object back to the React frontend:
+{
+  "success": true,
+  "prediction": "FAKE",
+  "confidence": 0.92,
+  "features": { ... },
+  "evidence_frame": "base64_string...",
+  "processing_time": 4.5
+}
+
+[Step S] Frontend Report Rendering:
+The React dashboard switches to 'Phase: report'. 
+- The Verdict (REAL/FAKE) is displayed with a premium gradient animation.
+- The EAR Graph is rendered using Recharts, showing the "Temporal Ocular Signature".
+- The Forensic Evidence Frame is decoded and displayed in the "Spotlight" section.
+
+[Step Z] Forensic Integrity Verified:
+The user reviews the evidence and can reset the engine to analyze a new subject.
+
+---
+END OF PROCESS
+---

@@ -1,9 +1,9 @@
 import numpy as np
 import cv2
 from typing import List, Dict, Tuple
-from .face_detector import FaceDetector
-from .landmark_detector import LandmarkDetector
-from .eye_analyzer import EyeAnalyzer
+from face_detector import FaceDetector
+from landmark_detector import LandmarkDetector
+from eye_analyzer import EyeAnalyzer
 
 
 

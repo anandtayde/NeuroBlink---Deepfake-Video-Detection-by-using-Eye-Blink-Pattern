@@ -16,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
 
 # Global variables
 classifier = None
@@ -59,7 +60,7 @@ app = FastAPI(title="Deepfake Detection API", version="1.0.0", lifespan=lifespan
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,6 +73,7 @@ class PredictionResponse(BaseModel):
     processing_time: float
     video_info: dict
     features: dict = None
+    evidence_frame: str = None
     error: str = None
 
 @app.get("/")
@@ -110,12 +112,60 @@ async def predict_video(file: UploadFile = File(...)):
             content = await file.read()
             temp_file.write(content)
         
-        # Process video
+        # Extract features
         import time
+        import base64
+        import cv2
+        from visualization import visualize_blink_detection
+        
         start_time = time.time()
         
+        # We need to extract features AND get a representative frame
         features = feature_extractor.extract_video_features(temp_path)
         prediction, confidence = classifier.predict(features)
+        
+        # Capture a representative frame (e.g., first detected blink or middle frame)
+        cap = cv2.VideoCapture(temp_path)
+        evidence_frame_b64 = None
+        
+        # Try to find a frame where eyes are relatively closed (low EAR)
+        best_vis_frame = None
+        max_frames_to_check = 100
+        checked = 0
+        
+        while checked < max_frames_to_check:
+            ret, frame = cap.read()
+            if not ret: break
+            
+            # Simple check: try to find a frame with face and landmarks
+            faces = feature_extractor.face_detector.detect_faces(frame)
+            largest_face = feature_extractor.face_detector.get_largest_face(faces)
+            if largest_face is not None:
+                x, y, w, h = largest_face
+                face_region = frame[y:y+h, x:x+w]
+                landmarks = feature_extractor.landmark_detector.detect_landmarks(face_region)
+                if landmarks is not None:
+                    # Adjust landmarks
+                    landmarks[:, 0] += x
+                    landmarks[:, 1] += y
+                    
+                    # Calculate EAR for this specific frame
+                    left_eye, right_eye = feature_extractor.landmark_detector.get_eye_landmarks(landmarks)
+                    l_ear = feature_extractor.eye_analyzer.calculate_eye_aspect_ratio(left_eye[:6])
+                    r_ear = feature_extractor.eye_analyzer.calculate_eye_aspect_ratio(right_eye[:6])
+                    
+                    # Apply visualization
+                    best_vis_frame = visualize_blink_detection(frame, landmarks, l_ear, r_ear)
+                    
+                    # If this looks like a blink (low EAR), we take it and stop
+                    if (l_ear + r_ear) / 2 < 0.28:
+                        break
+            checked += 1
+        cap.release()
+        
+        if best_vis_frame is not None:
+            _, buffer = cv2.imencode('.jpg', best_vis_frame)
+            evidence_frame_b64 = base64.b64encode(buffer).decode('utf-8')
         
         processing_time = time.time() - start_time
         result = "FAKE" if prediction == 1 else "REAL"
@@ -136,7 +186,8 @@ async def predict_video(file: UploadFile = File(...)):
                 "avg_blink_duration": features.get('avg_avg_blink_duration', 0),
                 "avg_ear": features.get('avg_avg_ear', 0),
                 "blink_completeness": features.get('avg_avg_blink_completeness', 0)
-            }
+            },
+            evidence_frame=evidence_frame_b64
         )
         
     except Exception as e:
@@ -162,4 +213,4 @@ async def predict_video(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting Deepfake Detection API...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

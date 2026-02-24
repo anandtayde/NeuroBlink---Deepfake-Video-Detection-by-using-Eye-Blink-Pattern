@@ -2,7 +2,7 @@
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Deepfake Detection Report - two</title>
+        <title>Deepfake Detection Report - 1</title>
         <style>
             body { 
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -27,7 +27,7 @@
             .result { 
                 font-size: 36px; 
                 font-weight: bold; 
-                color: green;
+                color: red;
                 text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             }
             .confidence { 
@@ -38,7 +38,7 @@
             .risk-badge {
                 display: inline-block;
                 padding: 8px 16px;
-                background-color: green;
+                background-color: red;
                 color: white;
                 border-radius: 20px;
                 font-weight: bold;
@@ -109,11 +109,11 @@
         <div class="container">
             <div class="header">
                 <h1>🔍 Deepfake Detection Report</h1>
-                <p><strong>Video:</strong> two</p>
-                <p class="result">REAL</p>
-                <p class="confidence">Confidence: 100.0%</p>
-                <div class="risk-badge">Risk Level: LOW</div>
-                <p class="timestamp">Generated on: 2025-08-25 12:45:00</p>
+                <p><strong>Video:</strong> 1</p>
+                <p class="result">FAKE</p>
+                <p class="confidence">Confidence: 85.9%</p>
+                <div class="risk-badge">Risk Level: HIGH</div>
+                <p class="timestamp">Generated on: 2026-02-23 00:33:38</p>
             </div>
             
             <div class="content">
@@ -122,18 +122,18 @@
                     <div class="analysis-grid">
                         <div class="analysis-card">
                             <h3>Prediction Details</h3>
+                            <p><span class="indicator bad"></span>
+                               Classification: <strong>FAKE</strong></p>
                             <p><span class="indicator good"></span>
-                               Classification: <strong>REAL</strong></p>
-                            <p><span class="indicator good"></span>
-                               Confidence: <strong>100.0%</strong></p>
-                            <p><span class="indicator good"></span>
-                               Risk Level: <strong>LOW</strong></p>
+                               Confidence: <strong>85.9%</strong></p>
+                            <p><span class="indicator bad"></span>
+                               Risk Level: <strong>HIGH</strong></p>
                         </div>
                         <div class="analysis-card">
                             <h3>Video Information</h3>
-                            <p>Duration: <strong>11.49s</strong></p>
-                            <p>Total Frames: <strong>172</strong></p>
-                            <p>Frame Rate: <strong>29.9 FPS</strong></p>
+                            <p>Duration: <strong>7.96s</strong></p>
+                            <p>Total Frames: <strong>179</strong></p>
+                            <p>Frame Rate: <strong>24.0 FPS</strong></p>
                         </div>
                     </div>
                 </div>
@@ -155,15 +155,15 @@
                         </div>
                         <div class="feature-card">
                             <div class="feature-name">Average EAR</div>
-                            <div class="feature-value">1.4188</div>
+                            <div class="feature-value">1.4568</div>
                         </div>
                         <div class="feature-card">
                             <div class="feature-name">EAR Standard Deviation</div>
-                            <div class="feature-value">0.0395</div>
+                            <div class="feature-value">0.0859</div>
                         </div>
                         <div class="feature-card">
                             <div class="feature-name">Blink Completeness</div>
-                            <div class="feature-value">1.2956</div>
+                            <div class="feature-value">1.2210</div>
                         </div>
                     </div>
                 </div>
